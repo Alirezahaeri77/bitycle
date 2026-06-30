@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bitycle — پلتفرم استراتژی</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f7f5ef;
+  --panel:#ffffff;
+  --panel-2:#f1efe6;
+  --line:rgba(20,18,12,.10);
+  --line-soft:rgba(20,18,12,.06);
+  --ink:#1d1c18;
+  --ink-dim:#615f57;
+  --ink-mute:#9b988c;
+  --gold:#a9762f;
+  --gold-soft:rgba(169,118,47,.10);
+  --teal:#188f6c;
+  --teal-soft:rgba(24,143,108,.10);
+  --red:#bd4040;
+  --red-soft:rgba(189,64,64,.10);
+  --violet:#6c57c9;
+  --violet-soft:rgba(108,87,201,.10);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:
+    radial-gradient(ellipse 1200px 600px at 80% -10%, rgba(169,118,47,.07), transparent),
+    radial-gradient(ellipse 900px 500px at -10% 110%, rgba(24,143,108,.05), transparent),
+    var(--bg);
+  color:var(--ink);
+  font-family:'Vazirmatn',sans-serif;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:'JetBrains Mono',monospace; direction:ltr; unicode-bidi:isolate;}
+::selection{background:var(--gold-soft); color:var(--gold);}
+::-webkit-scrollbar{width:8px; height:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--line); border-radius:8px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.18);}
+
+a, button{font-family:inherit;}
+:focus-visible{outline:2px solid var(--gold); outline-offset:2px; border-radius:4px;}
+
+/* ===== Layout shell ===== */
+.shell{display:flex; min-height:100vh;}
+
+/* ===== Sidebar ===== */
+.sidebar{
+  width:264px; flex-shrink:0;
+  border-left:1px solid var(--line);
+  background:rgba(255,255,255,.7);
+  backdrop-filter:blur(20px);
+  position:sticky; top:0; height:100vh;
+  display:flex; flex-direction:column;
+  padding:22px 16px;
+  z-index:40;
+}
+.brand{display:flex; align-items:center; gap:10px; padding:6px 10px 22px;}
+.brand-mark{
+  width:34px; height:34px; border-radius:9px;
+  background:linear-gradient(135deg, var(--gold), #e7c27c);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; color:#fff; font-size:15px; flex-shrink:0;
+  box-shadow:0 4px 18px rgba(169,118,47,.3);
+}
+.brand-name{font-weight:800; font-size:16.5px; letter-spacing:-.2px;}
+.brand-sub{font-size:10.5px; color:var(--ink-mute); margin-top:1px;}
+
+.nav-group-label{font-size:10.5px; color:var(--ink-mute); padding:14px 12px 6px; letter-spacing:.3px;}
+.nav{display:flex; flex-direction:column; gap:2px;}
+.nav-item{
+  display:flex; align-items:center; gap:10px;
+  padding:9px 12px; border-radius:9px;
+  font-size:13.5px; color:var(--ink-dim); cursor:pointer;
+  border:1px solid transparent;
+  transition:background .15s, color .15s, border-color .15s;
+  white-space:nowrap;
+}
+.nav-item:hover{background:rgba(0,0,0,.035); color:var(--ink);}
+.nav-item.active{
+  background:linear-gradient(90deg, var(--gold-soft), transparent);
+  color:var(--gold); border-color:rgba(169,118,47,.2); font-weight:600;
+}
+.nav-num{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--ink-mute); width:16px; flex-shrink:0;}
+.nav-item.active .nav-num{color:var(--gold);}
+
+.sidebar-foot{margin-top:auto; padding:12px 10px 4px; border-top:1px solid var(--line-soft);}
+.theme-row{display:flex; align-items:center; justify-content:space-between; font-size:11.5px; color:var(--ink-mute); padding-top:12px;}
+
+/* ===== Main ===== */
+.main{flex:1; min-width:0;}
+.topbar{
+  position:sticky; top:0; z-index:30;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 36px; border-bottom:1px solid var(--line);
+  background:rgba(247,245,239,.78); backdrop-filter:blur(16px);
+}
+.topbar-title{font-size:14.5px; font-weight:600; color:var(--ink-dim);}
+.topbar-title b{color:var(--ink); font-weight:700;}
+.search-fake{
+  display:flex; align-items:center; gap:8px;
+  background:var(--panel); border:1px solid var(--line);
+  padding:7px 12px; border-radius:9px; font-size:12px; color:var(--ink-mute);
+  width:230px; cursor:pointer;
+}
+kbd{background:var(--panel-2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--ink-mute);}
+
+.page{display:none; padding:44px 36px 90px; max-width:1280px;}
+.page.active{display:block;}
+
+/* ===== Reveal on scroll ===== */
+.reveal{opacity:0; transform:translateY(18px); transition:opacity .65s cubic-bezier(.16,1,.3,1), transform .65s cubic-bezier(.16,1,.3,1);}
+.reveal.in{opacity:1; transform:translateY(0);}
+
+/* ===== Typography ===== */
+.eyebrow{display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--gold); font-weight:600; letter-spacing:.3px; margin-bottom:14px;}
+.eyebrow::before{content:''; width:6px; height:6px; border-radius:50%; background:var(--gold); box-shadow:0 0 10px rgba(169,118,47,.4);}
+h1.page-title{font-size:34px; font-weight:800; letter-spacing:-.6px; line-height:1.25; margin-bottom:10px;}
+.page-desc{font-size:14.5px; color:var(--ink-dim); max-width:680px; line-height:2; margin-bottom:38px;}
+h2.section-title{font-size:20px; font-weight:700; margin-bottom:4px; letter-spacing:-.2px;}
+.section-sub{font-size:12.5px; color:var(--ink-mute); margin-bottom:20px;}
+
+/* ===== Cards ===== */
+.card{
+  background:var(--panel);
+  border:1px solid var(--line); border-radius:16px; padding:22px;
+  transition:transform .25s cubic-bezier(.16,1,.3,1), border-color .25s, box-shadow .25s;
+  box-shadow:0 1px 2px rgba(20,18,12,.03);
+}
+.card:hover{transform:translateY(-3px); border-color:rgba(20,18,12,.18); box-shadow:0 16px 36px -16px rgba(20,18,12,.18);}
+.grid{display:grid; gap:16px;}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+.grid-2{grid-template-columns:repeat(2,1fr);}
+@media(max-width:1100px){.grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:680px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr;}}
+
+/* KPI */
+.kpi-label{font-size:12px; color:var(--ink-mute); margin-bottom:10px; display:flex; align-items:center; justify-content:space-between;}
+.kpi-value{font-size:30px; font-weight:800; font-family:'JetBrains Mono',monospace; letter-spacing:-1px; direction:ltr; display:block; text-align:right;}
+.kpi-trend{font-size:11.5px; margin-top:8px; display:flex; align-items:center; gap:5px;}
+.up{color:var(--teal);} .down{color:var(--red);}
+.pill{font-size:10.5px; padding:3px 9px; border-radius:99px; font-weight:600; background:var(--panel-2); border:1px solid var(--line); color:var(--ink-dim);}
+.pill.gold{color:var(--gold); border-color:rgba(169,118,47,.3); background:var(--gold-soft);}
+.pill.teal{color:var(--teal); border-color:rgba(24,143,108,.3); background:var(--teal-soft);}
+.pill.red{color:var(--red); border-color:rgba(189,64,64,.3); background:var(--red-soft);}
+.pill.violet{color:var(--violet); border-color:rgba(108,87,201,.3); background:var(--violet-soft);}
+
+/* SWOT */
+.swot-card{border-radius:16px; padding:22px; border:1px solid var(--line);}
+.swot-s{background:linear-gradient(160deg, rgba(24,143,108,.07), var(--panel));}
+.swot-w{background:linear-gradient(160deg, rgba(189,64,64,.06), var(--panel));}
+.swot-o{background:linear-gradient(160deg, rgba(169,118,47,.08), var(--panel));}
+.swot-t{background:linear-gradient(160deg, rgba(108,87,201,.07), var(--panel));}
+.swot-head{display:flex; align-items:center; gap:9px; margin-bottom:14px; font-weight:700; font-size:14px;}
+.swot-dot{width:9px; height:9px; border-radius:50%;}
+.swot-card ul{list-style:none; display:flex; flex-direction:column; gap:10px;}
+.swot-card li{font-size:13px; color:var(--ink-dim); line-height:1.9; padding-right:14px; position:relative;}
+.swot-card li::before{content:''; position:absolute; right:0; top:9px; width:5px; height:5px; border-radius:50%; background:currentColor; opacity:.6;}
+
+/* Timeline */
+.timeline{position:relative; padding-right:28px; border-right:2px solid var(--line); display:flex; flex-direction:column; gap:30px;}
+.t-item{position:relative;}
+.t-dot{position:absolute; right:-35.5px; top:2px; width:14px; height:14px; border-radius:50%; background:var(--bg); border:2.5px solid var(--gold); box-shadow:0 0 0 4px var(--gold-soft);}
+.t-range{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--gold); margin-bottom:5px; direction:ltr; text-align:right;}
+.t-title{font-weight:700; font-size:15px; margin-bottom:6px;}
+.t-desc{font-size:13px; color:var(--ink-dim); line-height:1.9; max-width:560px;}
+.t-ad{display:inline-flex; align-items:center; gap:6px; margin-top:10px; font-size:11.5px; color:var(--gold); background:var(--gold-soft); border:1px solid rgba(169,118,47,.25); padding:5px 11px; border-radius:8px;}
+
+/* Funnel */
+.funnel-row{display:flex; align-items:center; gap:18px; padding:16px 0; border-bottom:1px solid var(--line-soft);}
+.funnel-row:last-child{border-bottom:none;}
+.funnel-bar-wrap{flex:1; height:10px; background:var(--panel-2); border-radius:99px; overflow:hidden;}
+.funnel-bar{height:100%; border-radius:99px; background:linear-gradient(90deg, var(--gold), #e7c27c); width:0%; transition:width 1.2s cubic-bezier(.16,1,.3,1);}
+.funnel-label{width:140px; font-size:13px; font-weight:600; flex-shrink:0;}
+.funnel-kpi{width:220px; font-size:11.5px; color:var(--ink-mute); flex-shrink:0; text-align:left;}
+.funnel-ad{width:170px; font-size:11px; color:var(--gold); flex-shrink:0; text-align:left;}
+
+/* Persona cards */
+.persona-card{border-radius:18px; border:1px solid var(--line); padding:0; overflow:hidden; background:var(--panel); box-shadow:0 1px 2px rgba(20,18,12,.03);}
+.persona-top{padding:24px 22px 18px; position:relative;}
+.persona-avatar{width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:14px;}
+.persona-score{position:absolute; top:22px; left:22px; text-align:left;}
+.persona-score b{font-family:'JetBrains Mono',monospace; font-size:22px; color:var(--gold);}
+.persona-score span{display:block; font-size:9.5px; color:var(--ink-mute);}
+.persona-body{padding:0 22px 22px;}
+.persona-row{display:flex; justify-content:space-between; align-items:flex-start; padding:10px 0; border-top:1px solid var(--line-soft); font-size:12.5px;}
+.persona-row .k{color:var(--ink-mute); flex-shrink:0; width:78px;}
+.persona-row .v{color:var(--ink-dim); text-align:left; line-height:1.8;}
+.jtbd-mini{display:flex; flex-direction:column; gap:8px; margin:14px 0;}
+.jtbd-mini-row{display:flex; gap:8px; align-items:flex-start; font-size:11.5px; line-height:1.8;}
+.jtbd-mini-tag{flex-shrink:0; font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px; white-space:nowrap;}
+.ad-strategy-box{margin-top:14px; padding:14px; border-radius:12px; border:1px dashed rgba(169,118,47,.35); background:var(--gold-soft);}
+.ad-strategy-box .lab{font-size:10.5px; font-weight:700; color:var(--gold); margin-bottom:6px; display:flex; align-items:center; gap:6px;}
+.ad-strategy-box .txt{font-size:12px; color:var(--ink-dim); line-height:1.9;}
+
+/* Matrix 2x2 */
+.matrix{position:relative; aspect-ratio:1/1; max-width:560px; border:1px solid var(--line); border-radius:18px; background:var(--panel); margin:0 auto;}
+.matrix-cross{position:absolute; inset:0;}
+.matrix-cross::before, .matrix-cross::after{content:''; position:absolute; background:var(--line-soft);}
+.matrix-cross::before{left:0; right:0; top:50%; height:1px;}
+.matrix-cross::after{top:0; bottom:0; right:50%; width:1px;}
+.matrix-axis-label{position:absolute; font-size:10.5px; color:var(--ink-mute); font-weight:600;}
+.matrix-point{position:absolute; width:13px; height:13px; border-radius:50%; transform:translate(50%,50%); cursor:pointer; transition:transform .2s; box-shadow:0 0 0 4px;}
+.matrix-point:hover{transform:translate(50%,50%) scale(1.3);}
+.matrix-point-label{position:absolute; font-size:10.5px; white-space:nowrap; top:16px; right:50%; transform:translateX(50%); color:var(--ink-dim); font-weight:600;}
+
+/* Bias cards (kept utility class for other modules) */
+.bias-card{border-radius:16px; padding:20px; border:1px solid var(--line); background:var(--panel); position:relative; overflow:hidden;}
+.bias-icon{width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:17px; margin-bottom:14px;}
+.bias-title{font-weight:700; font-size:14.5px; margin-bottom:8px;}
+.bias-desc{font-size:12.5px; color:var(--ink-dim); line-height:1.9;}
+
+/* Pyramid */
+.pyramid{display:flex; flex-direction:column; gap:3px; max-width:520px; margin:0 auto;}
+.pyr-row{display:flex; align-items:center; justify-content:center; padding:16px; border-radius:10px; font-size:13px; font-weight:600; text-align:center;}
+
+/* Impact effort matrix */
+.ie-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+.ie-quad{border-radius:16px; padding:18px; border:1px solid var(--line); min-height:170px;}
+.ie-quad h4{font-size:12.5px; color:var(--ink-mute); margin-bottom:12px; font-weight:600;}
+.ie-tag{display:inline-block; font-size:11.5px; padding:6px 11px; border-radius:8px; background:var(--panel-2); margin:3px; border:1px solid var(--line);}
+
+/* chips */
+.chip-row{display:flex; flex-wrap:wrap; gap:8px;}
+.chip{font-size:12px; padding:7px 13px; border-radius:9px; background:var(--panel-2); border:1px solid var(--line); color:var(--ink-dim);}
+
+/* ad channel grid */
+.ad-channel-card{border-radius:14px; padding:16px; border:1px solid var(--line); background:var(--panel); display:flex; gap:12px; align-items:flex-start;}
+.ad-channel-icon{width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; background:var(--gold-soft); color:var(--gold);}
+
+.chart-box{position:relative; height:280px;}
+
+footer.app-foot{padding:40px 36px; border-top:1px solid var(--line); display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-mute);}
+
+/* Mobile nav toggle */
+.mobile-toggle{display:none;}
+@media(max-width:920px){
+  .sidebar{position:fixed; right:0; top:0; transform:translateX(100%); transition:transform .3s; box-shadow:-20px 0 60px rgba(0,0,0,.15);}
+  .sidebar.open{transform:translateX(0);}
+  .mobile-toggle{display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:9px; background:var(--panel); border:1px solid var(--line); cursor:pointer;}
+  .page{padding:32px 18px 70px;}
+  .topbar{padding:14px 18px;}
+  .search-fake{display:none;}
+  .grid-4,.grid-3,.grid-2{grid-template-columns:1fr;}
+  .ie-grid{grid-template-columns:1fr;}
+  .funnel-row{flex-wrap:wrap;}
+  .funnel-kpi, .funnel-ad{width:100%; text-align:right;}
+}
+.overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:35; backdrop-filter:blur(2px);}
+.overlay.show{display:block;}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<div class="shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">BC</div>
+      <div>
+        <div class="brand-name">Bitycle</div>
+        <div class="brand-sub">پلتفرم استراتژی · DigiNext</div>
+      </div>
+    </div>
+
+    <div class="nav-group-label">نقشه استراتژی</div>
+    <nav class="nav" id="nav">
+      <div class="nav-item active" data-page="overview"><span class="nav-num">00</span> نمای کلی اجرایی</div>
+      <div class="nav-item" data-page="business"><span class="nav-num">01</span> هوش کسب‌وکار</div>
+      <div class="nav-item" data-page="market"><span class="nav-num">02</span> چشم‌انداز بازار</div>
+      <div class="nav-item" data-page="icp"><span class="nav-num">03</span> کاوشگر ICP و JTBD</div>
+      <div class="nav-item" data-page="value"><span class="nav-num">04</span> نگاشت ارزش</div>
+      <div class="nav-item" data-page="positioning"><span class="nav-num">05</span> موقعیت‌یابی</div>
+      <div class="nav-item" data-page="gtm"><span class="nav-num">06</span> ورود به بازار</div>
+      <div class="nav-item" data-page="recs"><span class="nav-num">07</span> توصیه‌ها و رسانه تبلیغاتی</div>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="theme-row">
+        <span>گزارش استراتژیک محرمانه</span>
+      </div>
+      <div class="theme-row" style="padding-top:6px;">
+        <span class="mono">v1.1 · 2026</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex; align-items:center; gap:14px;">
+        <div class="mobile-toggle" onclick="openSidebar()">☰</div>
+        <div class="topbar-title">Bitycle · <b id="topbar-page">نمای کلی اجرایی</b></div>
+      </div>
+      <div class="search-fake"><span>🔍</span> جستجو در گزارش <span style="margin-right:auto;"><kbd>⌘K</kbd></span></div>
+    </div>
+
+    <!-- PAGE 00 — OVERVIEW -->
+    <section class="page active" id="page-overview">
+      <div class="eyebrow reveal">نمای کلی اجرایی</div>
+      <h1 class="page-title reveal">دستیار هوشمند ترید بدون ریسک، آماده عبور از کریپتو به اقیانوس آبی بازارهای مالی.</h1>
+      <p class="page-desc reveal">بایتیکل امروز با موقعیت‌یابی محدود به «دستیار ارز دیجیتال»، تنها بخشی از پتانسیل واقعی خود را آزاد کرده است. این گزارش مسیر رشد از طریق آموزش تجربه‌محور بدون ریسک و توسعه به فارکس و طلا را ترسیم می‌کند.</p>
+
+      <div class="grid grid-4 reveal">
+        <div class="card">
+          <div class="kpi-label">مدل کسب‌وکار <span class="pill gold">اشتراکی</span></div>
+          <span class="kpi-value mono" style="font-size:20px;">SaaS / Freemium</span>
+          <div class="kpi-trend"><span class="up">↗</span><span style="color:var(--ink-mute)">درآمد تکرارشونده از اشتراک ویژه</span></div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">زیان‌گریزی شکسته‌شده <span class="pill teal">قدرت اصلی</span></div>
+          <span class="kpi-value">×۲.۵</span>
+          <div class="kpi-trend"><span style="color:var(--ink-mute)">درد ضرر / لذت سود — خنثی شده با شبیه‌ساز</span></div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">برد سریع پیشنهادی <span class="pill gold">اولویت ۱</span></div>
+          <span class="kpi-value">٪۴۰+</span>
+          <div class="kpi-trend"><span class="up">↗</span><span style="color:var(--ink-mute)">افزایش تبدیل با کاهش اصطکاک ثبت‌نام</span></div>
+        </div>
+        <div class="card">
+          <div class="kpi-label">شکاف بازار <span class="pill red">فرصت</span></div>
+          <span class="kpi-value mono" style="font-size:18px; text-align:right;">اقیانوس آبی</span>
+          <div class="kpi-trend"><span style="color:var(--ink-mute)">آموزش تجربه‌محور بدون ریسک مالی</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:40px;" class="reveal">
+        <h2 class="section-title">سفر ۹۰ روزه ورود به بازار</h2>
+        <div class="section-sub">دو فاز اجرایی برای بازطراحی پیام و فعال‌سازی گیمیفیکیشن</div>
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="pill gold" style="margin-bottom:14px;">روز ۱ تا ۴۵</div>
+            <div style="font-weight:700; margin-bottom:8px;">فریمینگ و اعتمادسازی</div>
+            <div style="font-size:13px; color:var(--ink-dim); line-height:1.9;">تغییر پیام از «دستیار کریپتو» به «شبیه‌ساز هوشمند بازارهای مالی» و افزودن مستندات امنیتی API.</div>
+          </div>
+          <div class="card">
+            <div class="pill violet" style="margin-bottom:14px;">روز ۴۶ تا ۹۰</div>
+            <div style="font-weight:700; margin-bottom:8px;">گیمیفیکیشن و ماندگاری</div>
+            <div style="font-size:13px; color:var(--ink-dim); line-height:1.9;">مسابقات دموی ماهانه با جوایز واقعی برای تحریک دوپامین و بازگشت کاربر.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 01 — BUSINESS -->
+    <section class="page" id="page-business">
+      <div class="eyebrow reveal">هوش کسب‌وکار</div>
+      <h1 class="page-title reveal">مدل، جریان درآمدی و موقعیت فعلی</h1>
+      <p class="page-desc reveal">هسته مدل کسب‌وکار بایتیکل، اشتراک ویژه (SaaS/Freemium) است. در حال حاضر با موقعیت‌یابی محدود به کریپتو، اقیانوس بزرگ‌تری از معامله‌گران را از دست می‌دهد.</p>
+
+      <div class="grid grid-2 reveal">
+        <div class="card">
+          <div class="pill gold" style="margin-bottom:14px;">جریان درآمدی اصلی</div>
+          <h2 class="section-title" style="font-size:17px;">اشتراک (SaaS / Freemium)</h2>
+          <p style="font-size:13px; color:var(--ink-dim); line-height:2; margin-top:10px;">فروش اشتراک ویژه برای دسترسی به تریدینگ‌ویو پرمیوم، ربات‌ها و دستیار هوشمند تحلیل تکنیکال.</p>
+        </div>
+        <div class="card">
+          <div class="pill" style="margin-bottom:14px;">یکپارچه‌سازی فنی</div>
+          <h2 class="section-title" style="font-size:17px;">اتصال API به صرافی‌های محلی</h2>
+          <p style="font-size:13px; color:var(--ink-dim); line-height:2; margin-top:10px;">اتصال به نوبیتکس و کوینکس صرفاً در سطح زیرساخت فنی برای اجرای معاملات کاربر است؛ بدون تعریف یک کانسپت شراکت تجاری مستقل در مدل درآمدی.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:40px;" class="reveal">
+        <h2 class="section-title">ماتریس SWOT</h2>
+        <div class="section-sub">تحلیل اختصاصی نقاط قوت، ضعف، فرصت و تهدید بایتیکل</div>
+        <div class="grid grid-2">
+          <div class="swot-card swot-s">
+            <div class="swot-head"><span class="swot-dot" style="background:var(--teal);"></span>نقاط قوت</div>
+            <ul style="color:var(--teal);">
+              <li>ابزار شبیه‌ساز دقیق و ترید بدون ریسک (Paper Trading)</li>
+              <li>فیلترنویسی و استراتژی‌ساز با هوش مصنوعی</li>
+              <li>یکپارچه‌سازی کامل با صرافی‌های محلی (نوبیتکس)</li>
+              <li>محیط یکپارچه (Unified Terminal) برای ترید و آموزش</li>
+            </ul>
+          </div>
+          <div class="swot-card swot-w">
+            <div class="swot-head"><span class="swot-dot" style="background:var(--red);"></span>نقاط ضعف</div>
+            <ul style="color:var(--red);">
+              <li>وابستگی شدید به نوسانات بازار کریپتو</li>
+              <li>فرآیند پیچیده احراز هویت توکن API برای مبتدیان</li>
+              <li>شناخت کم برند در لایه‌های سنتی بازار مالی</li>
+            </ul>
+          </div>
+          <div class="swot-card swot-o">
+            <div class="swot-head"><span class="swot-dot" style="background:var(--gold);"></span>فرصت‌ها</div>
+            <ul style="color:var(--gold);">
+              <li>توسعه به سمت بازارهای سنتی (بورس و طلا)</li>
+              <li>جذب کاربران سنتی ترسو با «ترید بدون ریسک»</li>
+              <li>خدمات سازمانی (B2B) به سبدگردان‌ها و آکادمی‌ها</li>
+            </ul>
+          </div>
+          <div class="swot-card swot-t">
+            <div class="swot-head"><span class="swot-dot" style="background:var(--violet);"></span>تهدیدها</div>
+            <ul style="color:var(--violet);">
+              <li>تغییرات رگولاتوری رمزارزها در ایران</li>
+              <li>رقابت با ابزارهای بومی صرافی و ربات‌های تلگرامی رایگان</li>
+              <li>ریسک‌های امنیتی ناشی از اتصال API صرافی‌ها</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:40px;" class="reveal">
+        <div class="card" style="border-color:rgba(169,118,47,.3);">
+          <h2 class="section-title" style="font-size:17px;">موقعیت‌یابی فعلی — یک محدودیت استراتژیک</h2>
+          <p style="font-size:13.5px; color:var(--ink-dim); line-height:2.1; margin-top:12px; max-width:760px;">بایتیکل خود را «دستیار هوشمند ارز دیجیتال» معرفی می‌کند. بر اساس چارچوب آپریل دانفورد، این موقعیت‌یابی بیش از حد محدودکننده است؛ با تمرکز صرف روی کریپتو، اقیانوس بزرگ‌تری از معامله‌گران فارکس، بورس و طلا از دست می‌رود.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 02 — MARKET -->
+    <section class="page" id="page-market">
+      <div class="eyebrow reveal">چشم‌انداز بازار</div>
+      <h1 class="page-title reveal">نقشه رقابتی و فرصت اقیانوس آبی</h1>
+      <p class="page-desc reveal">رقبا یا فقط تئوری آموزش می‌دهند یا فقط محیط واقعی پرریسک ارائه می‌کنند؛ بایتیکل در فضای خالی میان این دو ایستاده است.</p>
+
+      <div class="grid grid-3 reveal">
+        <div class="card">
+          <div class="pill" style="margin-bottom:12px;">رقبای مستقیم</div>
+          <div class="chip-row">
+            <span class="chip">تریدینگ‌ویو پولی</span>
+            <span class="chip">پلتفرم‌های کپی‌تریدینگ خارجی</span>
+            <span class="chip">ربات‌های تریدینگ‌بات</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="pill" style="margin-bottom:12px;">رقبای غیرمستقیم</div>
+          <div class="chip-row">
+            <span class="chip">آکادمی‌های آموزشی سنتی کریپتو</span>
+            <span class="chip">کانال‌های سیگنال تلگرام</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="pill" style="margin-bottom:12px;">جایگزین‌ها</div>
+          <div class="chip-row">
+            <span class="chip">اکسل</span>
+            <span class="chip">حساب دمو صرافی‌ها</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:44px;" class="reveal">
+        <h2 class="section-title">ماتریس موقعیت‌یابی — اقیانوس آبی</h2>
+        <div class="section-sub">محور افقی: عمق آموزش · محور عمودی: واقعی‌بودن تجربه ترید</div>
+        <div class="matrix" id="blueOceanMatrix">
+          <div class="matrix-cross">
+            <div class="matrix-axis-label" style="top:-22px; right:50%; transform:translateX(50%);">تجربه واقعی ↑</div>
+            <div class="matrix-axis-label" style="bottom:-22px; right:50%; transform:translateX(50%);">تجربه واقعی ↓</div>
+            <div class="matrix-axis-label" style="top:50%; right:-6px; transform:translateY(-50%);">آموزش عمیق ←</div>
+            <div class="matrix-axis-label" style="top:50%; left:-6px; transform:translateY(-50%);">→ بدون آموزش</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:40px;" class="reveal">
+        <div class="card" style="border-color:rgba(24,143,108,.3); background:linear-gradient(160deg, rgba(24,143,108,.06), var(--panel));">
+          <div class="pill teal" style="margin-bottom:14px;">شکاف استراتژیک</div>
+          <h2 class="section-title" style="font-size:18px;">«آموزش تجربه‌محور مبتنی بر هوش مصنوعی بدون ریسک مالی»</h2>
+          <p style="font-size:13.5px; color:var(--ink-dim); line-height:2.1; margin-top:12px; max-width:760px;">بزرگ‌ترین شکاف بازار، فاصله عمیق بین آموزش تئوری و اجرای واقعی است. بایتیکل دقیقاً در این فضای خالی قرار دارد و یک اقیانوس آبی بی‌نظیر را در اختیار دارد.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 03 — ICP + JTBD per persona -->
+    <section class="page" id="page-icp">
+      <div class="eyebrow reveal">کاوشگر ICP و JTBD</div>
+      <h1 class="page-title reveal">پروفایل مشتریان ایده‌آل، وظایف اختصاصی و استراتژی تبلیغاتی هر پرسونا</h1>
+      <p class="page-desc reveal">برای هر پرسونا، چارچوب JTBD (وظیفه کاربردی، احساسی، اجتماعی، مصرفی) به‌صورت اختصاصی تعریف شده و یک کانال تبلیغاتی متناسب با رفتار همان پرسونا انتخاب شده است.</p>
+
+      <div class="grid grid-3 reveal">
+        <!-- PERSONA 1 -->
+        <div class="persona-card">
+          <div class="persona-top">
+            <div class="persona-score"><b>۹</b><span>از ۱۰</span></div>
+            <div class="persona-avatar" style="background:var(--teal-soft);">🌱</div>
+            <div style="font-weight:700; font-size:15px;">تریدر مبتدی ترسو</div>
+          </div>
+          <div class="persona-body">
+            <div class="persona-row"><span class="k">درد اصلی</span><span class="v">ترس از ضرر، عدم دانش تکنیکال</span></div>
+            <div class="persona-row"><span class="k">تصمیم با</span><span class="v">شبیه‌ساز بدون ریسک + آموزش رایگان</span></div>
+
+            <div class="jtbd-mini">
+              <div class="jtbd-mini-row"><span class="jtbd-mini-tag" style="background:var(--gold-soft); color:var(--gold);">کاربردی</span><span>یادگیری ترید واقعی بدون به‌خطرانداختن سرمایه اولیه</span></div>
+              <div class="jtbd-mini-row"><span class="jtbd-mini-tag" style="background:var(--violet-soft); color:var(--violet);">احساسی</span><span>کاهش اضطراب از ضرر؛ احساس امنیت و کنترل در تصمیم‌گیری</span></div>
+              <div class="jtbd-mini-row"><span class="jtbd-mini-tag" style="background:var(--teal-soft); color:var(--teal);">اجتماعی</span><span>ورود به دنیای ترید بدون شرمندگی از اشتباهات مبتدیانه</span></div>
+              <div class="jtbd-mini-row"><span class="jtbd-mini-tag" style="background:var(--red-soft); color:var(--red);">مصرفی</span><span>دسترسی رایگان یا کم‌هزینه به ابزار حرفه‌ای تحلیل</span></div>
+            </div>
+
+            <div class="ad-strategy-box">
+              <div class="lab">📱 کانال تبلیغاتی پیشنهادی — تبلیغات سوشال مدیا</div>
+              <div class="txt">این پرسونا جوان و فعال در اینستاگرام و تلگرام است؛ ریلز و استوری آموزشی کوتاه با پیام «ضرر نکن، یاد بگیر» بیشترین نرخ جذب را دارد.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PERSONA 2 -->
+        <div class="persona-card">
+          <div class="persona-top">
+            <div class="persona-score"><b>۸</b><span>از ۱۰</span></div>
+            <div class="persona-avatar" style="background:var(--gold-soft);">🎯</div>
+            <div style="font-weight:700; font-size:15px;">شکارچی ابزار نیمه‌حرفه‌ای</div>
+          </div>
+          <div class="persona-body">
+            <div class="persona-row"><span class="k">درد اصلی</span><span class="v">هزینه بالای ابزارهای پرمیوم ارزی</span></div>
+            <div class="persona-row"><span class="k">تصمیم با</span><span class="v">تریدینگ‌ویو پولی رایگان + فیلترنویسی</span></div>
+
+            <div class="jtbd-mini">
+              <div class="jtbd-mini-row"><span class="jtbd-mini-tag" style="background:var(--gold-soft); color:var(--gold);">کاربردی</span><span>دسترسی به ابزار تحلیل پرمیوم بدون پرداخت دلاری</span></div>
+              <div class="jtbd-mini-row"><span class="jtbd-mini-tag" style="background:var(--violet-soft); color:var(--violet);">احساسی</span><span>حس هوشمندی در بهینه‌سازی استراتژی شخصی معاملاتی</span></div>
+              <div class="jtbd-mini-row"><span class="jtbd-mini-tag" style="background:var(--teal-soft); color:var(--teal);">اجتماعی</span><span>شناخته‌شدن به‌عنوان تریدری با تجهیزات و ابزار حرفه‌ای</span></div>
+              <div class="jtbd-mini-row"><span class="jtbd-mini-tag" style="background:var(--red-soft); color:var(--red);">مصرفی</span><span>جایگزینی هزینه ارزی با اشتراک ریالی مقرون‌به‌صرفه</span></div>
+            </div>
+
+            <div class="ad-strategy-box">
+              <div class="lab">🔍 کانال تبلیغاتی پیشنهادی — گوگل ادز</div>
+              <div class="txt">این کاربر به‌صورت فعال دنبال جایگزین «تریدینگ‌ویو رایگان» می‌گردد؛ کمپین جستجو روی کلمات کلیدی خرید‌محور، بالاترین نرخ تبدیل را می‌دهد.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PERSONA 3 -->
+        <div class="persona-card">
+          <div class="persona-top">
+            <div class="persona-score"><b>۷</b><span>از ۱۰</span></div>
+            <div class="persona-avatar" style="background:var(--violet-soft);">🎓</div>
+            <div style="font-weight:700; font-size:15px;">آکادمی‌های آموزشی مالی</div>
+          </div>
+          <div class="persona-body">
+            <div class="persona-row"><span class="k">درد اصلی</span><span class="v">عدم امکان سنجش عملکرد دانشجویان</span></div>
+            <div class="persona-row"><span class="k">تصمیم با</span><span class="v">پنل مدیریتی برای تست استراتژی دانشجویان</span></div>
+
+            <div class="jtbd-mini">
+              <div class="jtbd-mini-row"><span class="jtbd-mini-tag" style="background:var(--gold-soft); color:var(--gold);">کاربردی</span><span>سنجش عملکرد دانشجویان با آزمون عملی روی شبیه‌ساز</span></div>
+              <div class="jtbd-mini-row"><span class="jtbd-mini-tag" style="background:var(--violet-soft); color:var(--violet);">احساسی</span><span>اعتبار و اطمینان از کیفیت آموزش ارائه‌شده به دانشجو</span></div>
+              <div class="jtbd-mini-row"><span class="jtbd-mini-tag" style="background:var(--teal-soft); color:var(--teal);">اجتماعی</span><span>تمایز به‌عنوان آکادمی پیشرو و فناوری‌محور در بازار</span></div>
+              <div class="jtbd-mini-row"><span class="jtbd-mini-tag" style="background:var(--red-soft); color:var(--red);">مصرفی</span><span>قرارداد سازمانی با هزینه قابل توجیه برای مدیریت آکادمی</span></div>
+            </div>
+
+            <div class="ad-strategy-box">
+              <div class="lab">📰 کانال تبلیغاتی پیشنهادی — بنری و همسان</div>
+              <div class="txt">تبلیغات بنری و همسان (Native) در سایت‌های آموزشی و محتوای مالی، تصمیم‌گیرندگان آکادمی را در بستر حرفه‌ای و قابل‌اعتماد هدف می‌گیرد.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:40px;" class="reveal">
+        <h2 class="section-title">جذابیت بازار به تفکیک پرسونا</h2>
+        <div class="card">
+          <div class="chart-box" style="height:240px;"><canvas id="icpChart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 04 — VALUE -->
+    <section class="page" id="page-value">
+      <div class="eyebrow reveal">نگاشت ارزش</div>
+      <h1 class="page-title reveal">هرم ارزش باین و بوم پیشنهاد ارزش</h1>
+      <p class="page-desc reveal">بایتیکل در دو لایه از هرم ارزش باین، ارزش واقعی برای کاربر خلق می‌کند.</p>
+
+      <div class="grid grid-2 reveal">
+        <div>
+          <h2 class="section-title" style="font-size:17px; margin-bottom:16px;">هرم عناصر ارزش باین</h2>
+          <div class="pyramid">
+            <div class="pyr-row" style="background:var(--gold-soft); color:var(--gold); border:1px solid rgba(169,118,47,.3);">ارزش احساسی — کاهش اضطراب، پاداش و جذابیت</div>
+            <div class="pyr-row" style="background:var(--teal-soft); color:var(--teal); border:1px solid rgba(24,143,108,.3); padding:22px;">ارزش کاربردی — صرفه‌جویی زمان، کاهش هزینه، سازماندهی</div>
+          </div>
+        </div>
+        <div class="card">
+          <h2 class="section-title" style="font-size:17px;">جزئیات لایه‌ها</h2>
+          <div style="margin-top:14px;">
+            <div class="pill teal" style="margin-bottom:8px;">کاربردی</div>
+            <p style="font-size:13px; color:var(--ink-dim); line-height:2;">صرفه‌جویی در زمان (تحلیل خودکار نمودار با AI)، کاهش هزینه (تریدینگ‌ویو رایگان)، سازماندهی (ترمینال یکپارچه).</p>
+          </div>
+          <div style="margin-top:18px;">
+            <div class="pill gold" style="margin-bottom:8px;">احساسی</div>
+            <p style="font-size:13px; color:var(--ink-dim); line-height:2;">کاهش اضطراب (عدم ریسک واقعی)، پاداش و جذابیت (امتیازگیری در شبیه‌ساز).</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:40px;" class="reveal">
+        <h2 class="section-title">بوم پیشنهادی ارزش</h2>
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="pill red" style="margin-bottom:14px;">مسکن‌های درد</div>
+            <ul style="list-style:none; display:flex; flex-direction:column; gap:12px;">
+              <li style="font-size:13px; color:var(--ink-dim); line-height:1.9;">ترید دمو با دیتای زنده بدون نیاز به شارژ حساب ارزی</li>
+              <li style="font-size:13px; color:var(--ink-dim); line-height:1.9;">تحلیل خودکار نمودار در چند ثانیه با هوش مصنوعی</li>
+            </ul>
+          </div>
+          <div class="card">
+            <div class="pill teal" style="margin-bottom:14px;">خالقین سود</div>
+            <ul style="list-style:none; display:flex; flex-direction:column; gap:12px;">
+              <li style="font-size:13px; color:var(--ink-dim); line-height:1.9;">ایجاد اعتماد به نفس برای ورود به بازار واقعی</li>
+              <li style="font-size:13px; color:var(--ink-dim); line-height:1.9;">بهینه‌سازی استراتژی‌های معاملاتی شخصی با فیلترنویسی آسان</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 05 — POSITIONING -->
+    <section class="page" id="page-positioning">
+      <div class="eyebrow reveal">موقعیت‌یابی</div>
+      <h1 class="page-title reveal">چارچوب آپریل دانفورد</h1>
+      <p class="page-desc reveal">بازتعریف دسته بازار از «دستیار ارز دیجیتال» به «پلتفرم مدیریت و آموزش هوشمند ترید».</p>
+
+      <div class="grid grid-2 reveal">
+        <div class="card">
+          <div class="pill gold" style="margin-bottom:14px;">دسته بازار جدید</div>
+          <h2 class="section-title" style="font-size:18px;">پلتفرم مدیریت و آموزش هوشمند ترید</h2>
+          <p style="font-size:13px; color:var(--ink-dim); line-height:2; margin-top:10px;">نه صرفاً دستیار ارز دیجیتال — بلکه یک پلتفرم یکپارچه برای کریپتو، فارکس و طلا.</p>
+        </div>
+        <div class="card">
+          <div class="pill teal" style="margin-bottom:14px;">مزیت رقابتی</div>
+          <h2 class="section-title" style="font-size:18px;">تجربه واقعی + هوش مصنوعی + بدون ریسک</h2>
+          <p style="font-size:13px; color:var(--ink-dim); line-height:2; margin-top:10px;">برخلاف صرافی‌های سنتی یا دوره‌های تئوری، تجربه واقعی معامله‌گری را با تحلیل AI یکپارچه می‌کند.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:40px;" class="reveal">
+        <div class="card" style="border-color:rgba(169,118,47,.3); background:linear-gradient(160deg, rgba(169,118,47,.07), var(--panel)); padding:32px;">
+          <div class="pill gold" style="margin-bottom:18px;">بیانیه موقعیت‌یابی</div>
+          <p style="font-size:16px; line-height:2.3; font-weight:500; max-width:820px;">برای معامله‌گرانی که می‌خواهند بدون پرداخت هزینه‌های دلاری ابزار و ریسکِ از دست دادن سرمایه، در بازارهای رمزارز، فارکس و طلا به سوددهی مستمر برسند، بایتیکل یک پلتفرم ترید هوشمند و شبیه‌سازی‌شده است که بر خلاف صرافی‌های سنتی یا دوره‌های آموزشی تئوری، تجربه واقعی معامله‌گری را با تحلیل هوش مصنوعی یکپارچه می‌کند.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 06 — GTM -->
+    <section class="page" id="page-gtm">
+      <div class="eyebrow reveal">ورود به بازار</div>
+      <h1 class="page-title reveal">نقشه راه اجرایی ۹۰ روزه و قیف رشد</h1>
+      <p class="page-desc reveal">ساختار اجرایی منسجم برای رشد پلتفرم بر اساس متدولوژی قیف AARRR، به‌همراه کانال تبلیغاتی پیشنهادی هر مرحله.</p>
+
+      <div class="reveal">
+        <h2 class="section-title">نقشه گام‌به‌گام پیاده‌سازی</h2>
+        <div class="timeline" style="margin-top:24px;">
+          <div class="t-item">
+            <div class="t-dot"></div>
+            <div class="t-range">DAY 01 – 45</div>
+            <div class="t-title">بهینه‌سازی فریمینگ و اعتمادسازی</div>
+            <div class="t-desc">تغییر پیام‌های صفحه فرود از «دستیار کریپتو» به «شبیه‌ساز هوشمند بازارهای مالی» (شامل طلا و فارکس). پیاده‌سازی بخش امنیت API برای کاهش اضطراب کاربران.</div>
+            <div class="t-ad">📰 پیشنهاد رسانه: فیکس بنر در سایت‌های مالی + گوگل ادز</div>
+          </div>
+          <div class="t-item">
+            <div class="t-dot" style="border-color:var(--violet); box-shadow:0 0 0 4px var(--violet-soft);"></div>
+            <div class="t-range">DAY 46 – 90</div>
+            <div class="t-title">فعال‌سازی مکانیسم‌های گیمیفیکیشن</div>
+            <div class="t-desc">مسابقات ترید دمو ماهانه با جوایز واقعی (طلا یا تتر) برای تحریک دوپامین و افزایش نرخ بازگشت کاربران (Retention Loop).</div>
+            <div class="t-ad">📱 پیشنهاد رسانه: سوشال مدیا + بنری و همسان</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:48px;" class="reveal">
+        <h2 class="section-title">قیف هک رشد (AARRR) + رسانه تبلیغاتی هر مرحله</h2>
+        <div class="card">
+          <div class="funnel-row">
+            <div class="funnel-label" style="color:var(--gold);">جذب</div>
+            <div class="funnel-bar-wrap"><div class="funnel-bar" data-w="100" style="background:linear-gradient(90deg,var(--gold),#e7c27c);"></div></div>
+            <div class="funnel-kpi">سئو «تریدینگ‌ویو رایگان» / ثبت‌نام جدید</div>
+            <div class="funnel-ad">گوگل ادز · سوشال مدیا</div>
+          </div>
+          <div class="funnel-row">
+            <div class="funnel-label">فعال‌سازی</div>
+            <div class="funnel-bar-wrap"><div class="funnel-bar" data-w="78" style="background:linear-gradient(90deg,var(--teal),#7ee0bf);"></div></div>
+            <div class="funnel-kpi">اولین ترید زیر ۳ دقیقه / Activation Rate</div>
+            <div class="funnel-ad">فیکس بنر سایت‌های مالی</div>
+          </div>
+          <div class="funnel-row">
+            <div class="funnel-label">ماندگاری</div>
+            <div class="funnel-bar-wrap"><div class="funnel-bar" data-w="58" style="background:linear-gradient(90deg,var(--violet),#bcaef0);"></div></div>
+            <div class="funnel-kpi">پوش‌نوتیفیکیشن تحلیل AI روزانه / WAU</div>
+            <div class="funnel-ad">سوشال مدیا (ریتنشن کانتنت)</div>
+          </div>
+          <div class="funnel-row">
+            <div class="funnel-label">ارجاع</div>
+            <div class="funnel-bar-wrap"><div class="funnel-bar" data-w="34" style="background:linear-gradient(90deg,#c98a32,#e7c27c);"></div></div>
+            <div class="funnel-kpi">هدیه اشتراک با دعوت دوستان / K-Factor</div>
+            <div class="funnel-ad">تبلیغات بنری و همسان</div>
+          </div>
+          <div class="funnel-row">
+            <div class="funnel-label">درآمد</div>
+            <div class="funnel-bar-wrap"><div class="funnel-bar" data-w="21" style="background:linear-gradient(90deg,var(--red),#e09a9a);"></div></div>
+            <div class="funnel-kpi">تبدیل به اشتراک پرمیوم مستقیم / MRR</div>
+            <div class="funnel-ad">بیلبورد دیجیتال (برندسازی)</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 07 — RECS -->
+    <section class="page" id="page-recs">
+      <div class="eyebrow reveal">توصیه‌های استراتژیک</div>
+      <h1 class="page-title reveal">اولویت‌بندی اقدامات و نقشه رسانه تبلیغاتی</h1>
+      <p class="page-desc reveal">سه توصیه کلیدی برای اجرای فوری، نگاشت اثر/تلاش، و در پایان، پیشنهاد کانال تبلیغاتی برای هر مرحله از قیف رشد.</p>
+
+      <div class="grid grid-3 reveal">
+        <div class="card" style="border-color:rgba(169,118,47,.3);">
+          <div class="pill gold" style="margin-bottom:14px;">۰۱ — برد سریع</div>
+          <h2 class="section-title" style="font-size:15.5px;">دکمه «تست زنده بدون ثبت‌نام»</h2>
+          <p style="font-size:12.5px; color:var(--ink-dim); line-height:2; margin-top:10px;">کاهش اصطکاک (Fogg Behavior Model) می‌تواند نرخ تبدیل را تا ۴۰٪ افزایش دهد.</p>
+        </div>
+        <div class="card" style="border-color:rgba(24,143,108,.3);">
+          <div class="pill teal" style="margin-bottom:14px;">۰۲ — توسعه محصول</div>
+          <h2 class="section-title" style="font-size:15.5px;">افزودن بازار طلا و دلار</h2>
+          <p style="font-size:12.5px; color:var(--ink-dim); line-height:2; margin-top:10px;">بخش بزرگی از جامعه ایران به‌دلیل تورم، به‌دنبال حفظ ارزش پول در طلا هستند اما ترید بلد نیستند.</p>
+        </div>
+        <div class="card" style="border-color:rgba(108,87,201,.3);">
+          <div class="pill violet" style="margin-bottom:14px;">۰۳ — بازاریابی رفتاری</div>
+          <h2 class="section-title" style="font-size:15.5px;">اثر طعمه در قیمت‌گذاری</h2>
+          <p style="font-size:12.5px; color:var(--ink-dim); line-height:2; margin-top:10px;">برجسته‌سازی اشتراک ۳ ماهه (Decoy Effect) برای بازطراحی ارزش ادراک‌شده اشتراک سالانه.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:44px;" class="reveal">
+        <h2 class="section-title">ماتریس اثر در برابر تلاش</h2>
+        <div class="ie-grid">
+          <div class="ie-quad" style="background:linear-gradient(160deg, rgba(24,143,108,.08), var(--panel));">
+            <h4>اثر بالا · تلاش کم — اول این‌ها</h4>
+            <span class="ie-tag">دکمه تست زنده بدون ثبت‌نام</span>
+            <span class="ie-tag">مستندات امنیتی API</span>
+            <span class="ie-tag">فریمینگ قیمت در برابر تریدینگ‌ویو</span>
+          </div>
+          <div class="ie-quad" style="background:linear-gradient(160deg, rgba(169,118,47,.07), var(--panel));">
+            <h4>اثر بالا · تلاش زیاد — برنامه‌ریزی کن</h4>
+            <span class="ie-tag">افزودن بازار طلا و دلار</span>
+            <span class="ie-tag">گسترش محتوای آموزشی تخصصی</span>
+            <span class="ie-tag">نسخه سازمانی B2B برای آکادمی‌ها</span>
+          </div>
+          <div class="ie-quad" style="background:linear-gradient(160deg, rgba(108,87,201,.06), var(--panel));">
+            <h4>اثر کم · تلاش کم — وقتی وقت داری</h4>
+            <span class="ie-tag">اثر طعمه در پلن قیمت‌گذاری</span>
+            <span class="ie-tag">پوش‌نوتیفیکیشن تحلیل روزانه</span>
+          </div>
+          <div class="ie-quad" style="background:linear-gradient(160deg, rgba(189,64,64,.06), var(--panel));">
+            <h4>اثر کم · تلاش زیاد — اولویت پایین</h4>
+            <span class="ie-tag">مسابقات ماهانه با جوایز واقعی</span>
+            <span class="ie-tag">گسترش به بورس سنتی</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:48px;" class="reveal">
+        <h2 class="section-title">نقشه رسانه تبلیغاتی به تفکیک مرحله قیف رشد</h2>
+        <div class="section-sub">پیشنهاد کانال تبلیغاتی مناسب برای هر مرحله، بر اساس رفتار کاربر در آن نقطه از سفر</div>
+        <div class="grid grid-3">
+          <div class="ad-channel-card">
+            <div class="ad-channel-icon">🔍</div>
+            <div>
+              <div style="font-weight:700; font-size:13.5px; margin-bottom:4px;">جذب (Acquisition)</div>
+              <div style="font-size:12px; color:var(--ink-dim); line-height:1.9;">گوگل ادز روی عبارات خرید‌محور و تبلیغات سوشال مدیا برای دسترسی به حجم بالای مخاطب.</div>
+            </div>
+          </div>
+          <div class="ad-channel-card">
+            <div class="ad-channel-icon">📰</div>
+            <div>
+              <div style="font-weight:700; font-size:13.5px; margin-bottom:4px;">فعال‌سازی (Activation)</div>
+              <div style="font-size:12px; color:var(--ink-dim); line-height:1.9;">فیکس بنر در سایت‌های مالی برای رساندن کاربر به همان لحظه‌ تصمیم با کانتکست معتبر.</div>
+            </div>
+          </div>
+          <div class="ad-channel-card">
+            <div class="ad-channel-icon">📱</div>
+            <div>
+              <div style="font-weight:700; font-size:13.5px; margin-bottom:4px;">ماندگاری (Retention)</div>
+              <div style="font-size:12px; color:var(--ink-dim); line-height:1.9;">محتوای مستمر در سوشال مدیا برای حفظ یادآوری برند بین جلسات معاملاتی کاربر.</div>
+            </div>
+          </div>
+          <div class="ad-channel-card">
+            <div class="ad-channel-icon">🔗</div>
+            <div>
+              <div style="font-weight:700; font-size:13.5px; margin-bottom:4px;">ارجاع (Referral)</div>
+              <div style="font-size:12px; color:var(--ink-dim); line-height:1.9;">تبلیغات بنری و همسان در رسانه‌های مرتبط برای تقویت اعتبار اجتماعی پیام دعوت دوستان.</div>
+            </div>
+          </div>
+          <div class="ad-channel-card">
+            <div class="ad-channel-icon">🏙️</div>
+            <div>
+              <div style="font-weight:700; font-size:13.5px; margin-bottom:4px;">درآمد (Revenue) — برندسازی پرمیوم</div>
+              <div style="font-size:12px; color:var(--ink-dim); line-height:1.9;">بیلبورد دیجیتال در نقاط پرتردد شهری برای القای جایگاه یک برند معتبر و قابل پرداخت.</div>
+            </div>
+          </div>
+          <div class="ad-channel-card">
+            <div class="ad-channel-icon">✈️</div>
+            <div>
+              <div style="font-weight:700; font-size:13.5px; margin-bottom:4px;">گسترش بین‌المللی / مسافران تجاری</div>
+              <div style="font-size:12px; color:var(--ink-dim); line-height:1.9;">تبلیغات در فرودگاه‌ها برای دستیابی به مخاطب کسب‌وکاری و سرمایه‌گذار با قدرت خرید بالاتر.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="app-foot">
+      <span>گزارش استراتژیک Bitycle × DigiNext</span>
+      <span class="mono">CONFIDENTIAL</span>
+    </footer>
+  </div>
+</div>
+
+<script>
+// ---------- Navigation ----------
+const navItems = document.querySelectorAll('.nav-item');
+const pages = document.querySelectorAll('.page');
+const titleMap = {
+  overview:'نمای کلی اجرایی', business:'هوش کسب‌وکار', market:'چشم‌انداز بازار',
+  icp:'کاوشگر ICP و JTBD', value:'نگاشت ارزش', positioning:'موقعیت‌یابی',
+  gtm:'ورود به بازار', recs:'توصیه‌ها و رسانه تبلیغاتی'
+};
+
+navItems.forEach(item=>{
+  item.addEventListener('click', ()=>{
+    const id = item.dataset.page;
+    navItems.forEach(n=>n.classList.remove('active'));
+    item.classList.add('active');
+    pages.forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-'+id).classList.add('active');
+    document.getElementById('topbar-page').textContent = titleMap[id];
+    window.scrollTo({top:0, behavior:'instant'});
+    closeSidebar();
+    triggerReveals();
+    if(id==='market') setTimeout(drawMatrix, 50);
+    if(id==='gtm') setTimeout(animateFunnels, 50);
+    if(id==='icp') setTimeout(initIcpChart, 50);
+  });
+});
+
+function openSidebar(){ document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); }
+function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+
+// ---------- Reveal on scroll ----------
+function triggerReveals(){
+  const els = document.querySelectorAll('.page.active .reveal');
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+  }, {threshold:.1});
+  els.forEach((el,i)=>{ el.style.transitionDelay = (i*60)+'ms'; io.observe(el); });
+}
+triggerReveals();
+
+// ---------- Blue ocean matrix ----------
+function drawMatrix(){
+  const m = document.getElementById('blueOceanMatrix');
+  if(!m || m.dataset.drawn) return;
+  m.dataset.drawn = '1';
+  const points = [
+    {label:'بایتیکل', x:78, y:80, color:'var(--gold)'},
+    {label:'صرافی‌ها', x:30, y:88, color:'var(--violet)'},
+    {label:'آکادمی‌های آموزشی', x:85, y:18, color:'var(--red)'},
+    {label:'سیگنال‌های تلگرام', x:20, y:25, color:'#9b988c'},
+  ];
+  points.forEach(p=>{
+    const dot = document.createElement('div');
+    dot.className='matrix-point';
+    dot.style.right = p.x+'%';
+    dot.style.bottom = p.y+'%';
+    dot.style.background = p.color;
+    dot.style.color = p.color;
+    const lab = document.createElement('div');
+    lab.className='matrix-point-label';
+    lab.textContent = p.label;
+    dot.appendChild(lab);
+    m.appendChild(dot);
+  });
+}
+
+// ---------- Funnel animation ----------
+function animateFunnels(){
+  document.querySelectorAll('.funnel-bar').forEach(b=>{
+    b.style.width = '0%';
+    requestAnimationFrame(()=> requestAnimationFrame(()=>{ b.style.width = b.dataset.w+'%'; }));
+  });
+}
+
+// ---------- ICP chart ----------
+let icpChartInstance=null;
+function initIcpChart(){
+  const ctx = document.getElementById('icpChart');
+  if(!ctx || icpChartInstance) return;
+  icpChartInstance = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels:['تریدر مبتدی ترسو','شکارچی ابزار نیمه‌حرفه‌ای','آکادمی‌های آموزشی مالی'],
+      datasets:[{
+        label:'جذابیت بازار (۱-۱۰)',
+        data:[9,8,7],
+        backgroundColor:['rgba(24,143,108,.55)','rgba(169,118,47,.55)','rgba(108,87,201,.5)'],
+        borderColor:['#188f6c','#a9762f','#6c57c9'],
+        borderWidth:1.5,
+        borderRadius:8,
+        maxBarThickness:60
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{
+        y:{beginAtZero:true, max:10, grid:{color:'rgba(20,18,12,.06)'}, ticks:{color:'#9b988c', font:{family:'JetBrains Mono'}}},
+        x:{grid:{display:false}, ticks:{color:'#615f57', font:{family:'Vazirmatn', size:12}}}
+      },
+      plugins:{legend:{display:false}}
+    }
+  });
+}
+
+// init first paint
+setTimeout(drawMatrix, 200);
+setTimeout(animateFunnels, 200);
+setTimeout(initIcpChart, 200);
+
+document.addEventListener('keydown', e=>{
+  if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); }
+});
+</script>
+</body>
+</html>
